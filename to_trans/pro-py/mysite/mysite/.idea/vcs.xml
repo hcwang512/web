@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="VcsDirectoryMappings">
+    <mapping directory="" vcs="" />
+    <mapping directory="$PROJECT_DIR$/../../bottle" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../../cache/flask-cache" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../../cache/redis-simple-cache" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../../django-twoscoops-project" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../../flask" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../../flasky" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../../june" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../../werkzeug" vcs="Git" />
+  </component>
+</project>
+
