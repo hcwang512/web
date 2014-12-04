@@ -11,7 +11,7 @@ import os
 basedir = os.path.abspath(os.path.dirname(__file__))
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.urandom(24)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'data.sqlite')
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:root@127.0.0.1:3306/flasksample'
 app.config['DEBUG'] = True
 api = Api(app)
 db = SQLAlchemy(app)
@@ -68,9 +68,23 @@ class Role(db.Model):
     name = db.Column(db.String(32), index=True)
     permissions = db.Column(db.Integer, nullable=False)
     users = db.relationship('User', backref='role', lazy='dynamic')
-
+    sites = db.relationship('RoleSite', foreign_keys=['role_site.site_id'], backref=db.backref('role', lazy='joined'), lazy='dynamic')
     def __repr__(self):
         return '[id=%r, permissions=%d]' %(self.id, self.permissions)
+
+class Site(db.Model):
+    __tablename__ = 'site'
+    id = db.Column(db.Integer, primary_key=True)
+    endpoint = db.Column(db.String(32), unique=True)
+    roles = db.relationship('RoleSite', foreign_keys=['role_site.role_id'], backref=db.backref('site', lazy='joined'), lazy='dynamic')
+
+
+class RoleSite(db.Model):
+    __tablename__ = 'role_site'
+    id = db.Column(db.Integer, primary_key=True)
+    role_id = db.Column(db.Integer, db.ForeignKey('role.id'), primary_key=True)
+    site_id = db.Column(db.Integer, db.ForeignKey('site.id'), primary_key=True)
+    access = db.Column(db.Boolean)
 
 @login_manager.user_loader
 def load_user(userid):
