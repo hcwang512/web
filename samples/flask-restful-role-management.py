@@ -24,6 +24,7 @@ login_manager.login_view = "login"
 login_manager.session_protection = 'strong'
 login_manager.init_app(app)
 todos = {}
+todos['todo1'] = 'todo_1'
 
 
 class User( UserMixin, db.Model):
@@ -192,21 +193,36 @@ class TodoSimple(Resource):
     """
     继承Resource， 相应的方法需要相应的权限
     """
-    @permission_required()
+    #@permission_required()
     def get(self, todo_id):
         return {todo_id: todos[todo_id]}
 
-    @permission_required()
+    #@permission_required()
     def put(self, todo_id):
         todos[todo_id] = request.form['data']
         return jsonify({todo_id: todos[todo_id]})
 
-    @permission_required()
+    #@permission_required()
     def delete(self, todo_id):
         del todos[todo_id]
 
 
 api.add_resource(TodoSimple, '/hello/<todo_id>', endpoint='hello')
+
+@app.before_request
+def before_request():
+    endpoint = request.url_rule.endpoint or request.endpoint
+    if endpoint == 'login':
+        return
+    method = request.method
+    user_id = session.get('userid')
+    print(endpoint, method)
+    access = RoleSite.query.filter_by(role_id=User.query.get(user_id).role.id,
+                                        site_id=Site.query.filter_by(endpoint=endpoint,
+                                                                         method=method).first().id).first().access
+    if access is False:
+        abort(405)
+
 
 @app.route('/login/<name>/<password>', methods=['POST', 'GET'])
 def login(name, password):
