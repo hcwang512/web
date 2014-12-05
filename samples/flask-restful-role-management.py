@@ -12,7 +12,8 @@ import os
 basedir = os.path.abspath(os.path.dirname(__file__))
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.urandom(24)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:root@127.0.0.1:3306/flasksample'
+#app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:root@127.0.0.1:3306/flasksample'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///'+basedir+'data.sqlite'
 app.config['DEBUG'] = True
 app.config['TEST'] = True
 api = Api(app)
@@ -34,7 +35,7 @@ class User( UserMixin, db.Model):
     role_id = db.Column(db.Integer, db.ForeignKey('role.id'))
     name = db.Column(db.String(64), nullable=False, unique=True)
     password=db.Column(db.String(64), nullable=False)
-
+    role = db.relationship('Role')
     def __repr__(self):
         return '[id=%r, name=%r, password=%r, role_id=%r]' % (self.id, self.name, self.password, self.role_id)
 
@@ -69,7 +70,7 @@ class Role(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(32), index=True)
     permissions = db.Column(db.Integer, nullable=False)
-    users = db.relationship('User', backref='role', lazy='dynamic')
+    users = db.relationship('User')
     #sites = db.relationship('RoleSite', foreign_keys=['role_site.site_id'], backref=db.backref('role', lazy='joined'), lazy='dynamic')
     def __repr__(self):
         return '[id=%r, permissions=%d]' %(self.id, self.permissions)
@@ -87,8 +88,8 @@ class RoleSite(db.Model):
     #id = db.Column(db.Integer, primary_key=True)
     role_id = db.Column(db.Integer, db.ForeignKey('role.id'), primary_key=True)
     site_id = db.Column(db.Integer, db.ForeignKey('site.id'), primary_key=True)
-    site = db.relationship('Site', backref='role_site')
-    role = db.relationship('Role', backref='role_site')
+    site = db.relationship('Site')
+    role = db.relationship('Role')
     access = db.Column(db.Boolean, default=False)
 
 @login_manager.user_loader
@@ -108,6 +109,7 @@ def permission_required():
             endpoint = request.url_rule.endpoint or request.endpoint
             method = request.method
             user_id = session.get('userid')
+            #role_id =
             if RoleSite.query.filter_by(role_id=User.query.get(user_id).role.id,
                                         site_id=Site.query.filter_by(endpoint=endpoint,
                                                                          method=method).first().id).first().access:
@@ -144,7 +146,7 @@ def add_role():
     }
 
 
-    db.session.add(Role(id=1, name='guest'))
+    db.session.add(Role(id=1, name='guest', permissions=roles.get('guest')))
     db.session.add(Role(id=2, name='user', permissions=roles.get('user')))
     db.session.add(Role(id=3, name='moderate', permissions=roles.get('moderate')))
     db.session.add(Role(id=4, name='admin', permissions=roles.get('admin')))
@@ -179,8 +181,8 @@ def add_endpoint():
     db.session.commit()
 
 def add_role_site():
-    role_site_guest_delete = RoleSite(role_id=1, site_id=3, access=False)
-    role_site_guest_get = RoleSite(role_id=1, site_id=4, access=True)
+    role_site_guest_delete = RoleSite(role_id=1, site_id=1, access=False)
+    role_site_guest_get = RoleSite(role_id=1, site_id=2, access=True)
     db.session.add(role_site_guest_delete)
     db.session.add(role_site_guest_get)
     db.session.commit()
@@ -208,6 +210,7 @@ api.add_resource(TodoSimple, '/hello/<todo_id>', endpoint='hello')
 
 @app.route('/login/<name>/<password>', methods=['POST', 'GET'])
 def login(name, password):
+    print('login now satrt')
     user = User.query.filter_by(name=name).first()
     print(user)
     if user is not None and user.password == password:
@@ -231,10 +234,11 @@ def logout():
 
 manager = Manager(app)
 if __name__ == '__main__':
-    #db.drop_all()
-   # db.create_all()
-    #add_role_site()
-    #add_endpoint()
-    #add_role()
-   # add_user()
+    db.drop_all()
+    db.create_all()
+    add_role_site()
+    add_endpoint()
+    add_role()
+    add_user()
+    print('app run')
     manager.run()
